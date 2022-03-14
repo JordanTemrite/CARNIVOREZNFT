@@ -36,8 +36,9 @@ contract CARNIVOREZ is ERC721Enumerable, Ownable, PaymentSplitter {
     uint256 public maxSupply = 24;
     uint256 public tMints = 0;
 
-    uint256 public _namePrice = 10 ether;
+    uint256 public _namePrice = 100 ether;
     uint256 public _descPrice = 100 ether;
+    uint256[] public _cardPrice = [100 ether, 150 ether, 200 ether];
 
     bool public wlSaleState = false;
     bool public rSaleState = false;
@@ -46,10 +47,12 @@ contract CARNIVOREZ is ERC721Enumerable, Ownable, PaymentSplitter {
 
     event nChange(uint256 _cID, string _cName);
     event dChange(uint256 _cID, string _cDesc);
+    event cChange(uint256 _cID, uint256 _cardID);
 
     struct Data {
         string name;
         string description;
+        uint256 card;
     }
     
     Counters.Counter private _tokenCounter;
@@ -161,8 +164,7 @@ contract CARNIVOREZ is ERC721Enumerable, Ownable, PaymentSplitter {
             } else {
                 require(1 == 2, "CARNIVOREZ: YOU ARE NOT WHITELISTED OR HAVE USED YOUR WHITELIST MINTS");
             }
-        }
-
+        } else
         if(rSaleState == true) {
             require(pMintLimit[msg.sender].add(_mNum) <= 2, "CARNIVOREZ: ATTEMPTING TO MINT TOO MANY");
             require(msg.value == mintPrice.mul(_mNum), "CARNIVOREZ: INSUFFCIENT OR TO MUCH ETHER SENT");
@@ -216,6 +218,14 @@ contract CARNIVOREZ is ERC721Enumerable, Ownable, PaymentSplitter {
         meat.burnMeat(msg.sender, _descPrice);
         cData[_cID].description = _cDesc;
         emit dChange(_cID, _cDesc);
+    }
+
+    function setCard(uint256 _cID, uint256 _cardID) external {
+        require(ownerOf(_cID) == msg.sender, "CARNIVOREZ: YOU DO NOT OWN THIS NFT");
+
+        meat.burnMeat(msg.sender, _cardPrice[_cardID]);
+        cData[_cID].card = _cardID;
+        emit cChange(_cID, _cardID);
     }
 
     function withdrawAll() external onlyOwner {
