@@ -91,6 +91,12 @@ contract CARNIVOREZ is ERC721Enumerable, Ownable, PaymentSplitter {
         bMintPrice = _billMintPrice;
     }
 
+    function setCardPrice(uint256[] memory _cardPrices) external onlyOwner {
+        for(uint256 i = 0; i < _cardPrices.length; i++) {
+            _cardPrice[i] = _cardPrices[i];
+        }
+    }
+
     function populateBillionWL(address[] memory _toBeWhitelisted, uint256 _numberOfMints) external onlyOwner {
         for(uint256 i = 0; i < _toBeWhitelisted.length; i++) {
             zbWL[_toBeWhitelisted[i]] = zbWL[_toBeWhitelisted[i]].add(_numberOfMints);
@@ -222,6 +228,7 @@ contract CARNIVOREZ is ERC721Enumerable, Ownable, PaymentSplitter {
 
     function setCard(uint256 _cID, uint256 _cardID) external {
         require(ownerOf(_cID) == msg.sender, "CARNIVOREZ: YOU DO NOT OWN THIS NFT");
+        require(_cardPrice[_cardID] != 0, "CARNIVOREZ: INVALID CARD SELECTED");
 
         meat.burnMeat(msg.sender, _cardPrice[_cardID]);
         cData[_cID].card = _cardID;
