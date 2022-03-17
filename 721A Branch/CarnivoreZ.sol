@@ -110,9 +110,12 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         }
     }
 
-    function setSaleState(bool _rSale, bool _wlSale) external onlyOwner {
-        rSaleState = _rSale;
-        wlSaleState = _wlSale;
+    function setPubSaleState() external onlyOwner {
+        rSaleState = !rSaleState;
+    }
+
+    function setWlSaleState() external onlyOwner {
+        wlSaleState = !wlSaleState;
     }
 
     function billionWhitelistMint(uint256 _mNum) external payable {
