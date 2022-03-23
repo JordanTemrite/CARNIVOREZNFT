@@ -55,7 +55,7 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
     address payable thisContract;
     
     address[] private _split = [
-        0x79a3e8E917D02Ee638E9De592330F1D9058Fd794
+        0x82C3ACBb6cF6b04f52aDad9Bd4f3D26BC5Db5b36
         ];
     
     uint256[] private _percent = [
