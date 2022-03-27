@@ -31,11 +31,6 @@ contract MEAT is ERC20, Ownable {
 
     }
 
-    ///////REMOVE BEFORE DEPLOYMENT!!!!!!!!/////
-    function megaMint() external onlyOwner {
-        _mint(msg.sender, 1000000000000000000000);
-    }
-
     function initializeRewards() external onlyOwner {
         require(rStart == 0, "MEAT: REWARDS ALREADY INITIALIZED");
         rStart = block.timestamp;
