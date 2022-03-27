@@ -7,6 +7,8 @@ import "./Ownable.sol";
 import "./Address.sol";
 import "./PaymentSplitter.sol";
 import "./Strings.sol";
+import "./IUniswapV2Pair.sol";
+import "./AggregatorV3Interface.sol";
 
 interface iMeat {
     function updateRewards(address _sender, address _reciever) external;
@@ -18,24 +20,24 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
     using Address for address;
 
     iMeat public meat;
+    AggregatorV3Interface internal ethPrice;
     
     mapping(uint256 => string) private _tokenURIs;
 
-    mapping(address => uint256) public zbWL;
-    mapping(address => uint256) public zmWL;
-    mapping(address => uint256) public rWL;
+    mapping(address => uint256) public primeMeatlist;
+    mapping(address => uint256) public choiceMeatlist;
     mapping(address => uint256) public pMintLimit;
     mapping(address => bool) public approvedAddress;
     mapping(uint256 => Data) public cData;
 
-    uint256 public mintPrice = .3 ether;
-    uint256 public bMintPrice = .225 ether;
-    uint256 public maxSupply = 10000;
-    uint256 public tMints = 0;
+    uint256 public mintPrice = .15 ether;
+    uint256 public bMintPrice = .1125 ether;
+    uint256 public maxSupply = 10012;
+    uint256 public tMints;
 
     uint256 public _namePrice = 100 ether;
     uint256 public _descPrice = 100 ether;
-    uint256[] public _cardPrice = [100 ether, 150 ether, 200 ether];
+    uint256[] public _cardPrice;
 
     bool public wlSaleState = false;
     bool public rSaleState = false;
@@ -53,16 +55,19 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
     }
     
     address payable thisContract;
+    address pair = 0x4Ab6e651ECf894766E3ffBA610346F0e54543Cc5;
+    address apeToken = 0x127554D4A22eb61127a859447bF7728fF72879Ae;
     
     address[] private _split = [
         0x82C3ACBb6cF6b04f52aDad9Bd4f3D26BC5Db5b36
-        ];
+    ];
     
     uint256[] private _percent = [
         100
-        ];
+    ];
     
     constructor() ERC721A("TESTNFT", "TEST") PaymentSplitter(_split, _percent) {
+        ethPrice = AggregatorV3Interface(0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE);
     }
     
     fallback() external payable {
@@ -92,21 +97,15 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         }
     }
 
-    function populateBillionWL(address[] memory _toBeWhitelisted, uint256 _numberOfMints) external onlyOwner {
+    function populatePrimeList(address[] memory _toBeWhitelisted, uint256 _numberOfMints) external onlyOwner {
         for(uint256 i = 0; i < _toBeWhitelisted.length; i++) {
-            zbWL[_toBeWhitelisted[i]] += _numberOfMints;
+            primeMeatlist[_toBeWhitelisted[i]] += _numberOfMints;
         }
     }
 
-    function populateMillionWL(address[] memory _toBeWhitelisted, uint256 _numberOfMints) external onlyOwner {
+    function populateChoiceList(address[] memory _toBeWhitelisted, uint256 _numberOfMints) external onlyOwner {
         for(uint256 i = 0; i < _toBeWhitelisted.length; i++) {
-            zmWL[_toBeWhitelisted[i]] += _numberOfMints;
-        }
-    }
-
-    function populateRegularWL(address[] memory _toBeWhitelisted, uint256 _numberOfMints) external onlyOwner {
-        for(uint256 i = 0; i < _toBeWhitelisted.length; i++) {
-            rWL[_toBeWhitelisted[i]] += _numberOfMints;
+            choiceMeatlist[_toBeWhitelisted[i]] += _numberOfMints;
         }
     }
 
@@ -118,77 +117,81 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         wlSaleState = !wlSaleState;
     }
 
-    function billionWhitelistMint(uint256 _mNum) external payable {
-        require(wlSaleState == true, "TEST: MINT IS INACTIVE");
-        require(zbWL[msg.sender] - _mNum >= 0,"TEST: ATTEMPTING TO MINT PAST ALLOTED AMOUNT");
-        require(msg.value == bMintPrice * _mNum, "TEST: INSUFFCIENT OR TO MUCH ETHER SENT");
-        require(thisContract.send(msg.value), "TEST: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
+    function primeListMint(uint256 _mNum, bool _useApe) external payable {
+        require(wlSaleState == true, "TEST: MEATLIST MINT IS INACTIVE");
+        require(primeMeatlist[msg.sender] - _mNum >= 0,"TEST: ATTEMPTING TO MINT PAST ALLOTED AMOUNT");
         require(totalSupply() + _mNum <= maxSupply, "TEST: ATTEMPTED TO MINT PAST MAX SUPPLY");
+        uint256 ethAmount = calcEthAmount(0, _mNum);
 
-        zbWL[msg.sender] -= _mNum;
-        _safeMint(msg.sender, _mNum);
+        if(_useApe == false) {
+            require(msg.value == ethAmount, "TEST: INSUFFCIENT OR TO MUCH ETHER SENT");
+            require(thisContract.send(msg.value), "TEST: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
+
+            primeMeatlist[msg.sender] -= _mNum;
+            _safeMint(msg.sender, _mNum);
+        }
+
+        if(_useApe == true) {
+            uint256 tAmount = viewApeCost(ethAmount);
+            require(IERC20(apeToken).transferFrom(msg.sender, address(this), tAmount));
+
+            primeMeatlist[msg.sender] -= _mNum;
+            _safeMint(msg.sender, _mNum);
+        }
     }
 
-    function millionWhitelistMint(uint256 _mNum) external payable {
-        require(wlSaleState == true, "TEST: MINT IS INACTIVE");
-        require(zmWL[msg.sender] - _mNum >= 0,"TEST: ATTEMPTING TO MINT PAST ALLOTED AMOUNT");
-        require(msg.value == mintPrice * _mNum, "TEST: INSUFFCIENT OR TO MUCH ETHER SENT");
-        require(thisContract.send(msg.value), "TEST: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
+    function choiceListMint(uint256 _mNum, bool _useApe) external payable {
+        require(wlSaleState == true, "TEST: MEATLIST MINT IS INACTIVE");
+        require(choiceMeatlist[msg.sender] - _mNum >= 0,"TEST: ATTEMPTING TO MINT PAST ALLOTED AMOUNT");
         require(totalSupply() + _mNum <= maxSupply, "TEST: ATTEMPTED TO MINT PAST MAX SUPPLY");
-        
-        zmWL[msg.sender] -= _mNum;
-        _safeMint(msg.sender, _mNum);     
+        uint256 ethAmount = calcEthAmount(1, _mNum);
+
+        if(_useApe == false) {
+            require(msg.value == ethAmount, "TEST: INSUFFCIENT OR TO MUCH ETHER SENT");
+            require(thisContract.send(msg.value), "TEST: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
+
+            choiceMeatlist[msg.sender] -= _mNum;
+            _safeMint(msg.sender, _mNum);
+        }
+
+        if(_useApe == true) {
+            uint256 tAmount = viewApeCost(ethAmount);
+            require(IERC20(apeToken).transferFrom(msg.sender, address(this), tAmount));
+
+            choiceMeatlist[msg.sender] -= _mNum;
+            _safeMint(msg.sender, _mNum);
+        }
     }
 
-    function whitelistMint(uint256 _mNum) external payable {
-        require(wlSaleState == true, "TEST: MINT IS INACTIVE");
-        require(rWL[msg.sender] - _mNum >= 0,"TEST: ATTEMPTING TO MINT PAST ALLOTED AMOUNT");
-        require(msg.value == mintPrice * _mNum, "TEST: INSUFFCIENT OR TO MUCH ETHER SENT");
-        require(thisContract.send(msg.value), "TEST: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
-        require(totalSupply() + _mNum <= maxSupply, "TEST: ATTEMPTED TO MINT PAST MAX SUPPLY");
-
-        rWL[msg.sender] -= _mNum;
-        _safeMint(msg.sender, _mNum);
-    }
-
-    function publicMint(uint256 _mNum) external payable {
-        require(rSaleState == true, "TEST: MINT IS INACTIVE");
+    function publicMint(uint256 _mNum, bool _useApe) external payable {
+        require(rSaleState == true, "TEST: PUBLIC MINT IS INACTIVE");
         require(pMintLimit[msg.sender] + _mNum <= 2, "TEST: ATTEMPTING TO MINT TOO MANY");
-        require(msg.value == mintPrice * _mNum, "TEST: INSUFFCIENT OR TO MUCH ETHER SENT");
-        require(thisContract.send(msg.value), "TEST: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
         require(totalSupply() + _mNum <= maxSupply, "TEST: ATTEMPTED TO MINT PAST MAX SUPPLY");
+        uint256 ethAmount = calcEthAmount(2, _mNum);
 
-        pMintLimit[msg.sender] += _mNum;
-        _safeMint(msg.sender, _mNum);
+        if(_useApe == false) {
+            require(msg.value == ethAmount, "TEST: INSUFFCIENT OR TO MUCH ETHER SENT");
+            require(thisContract.send(msg.value), "TEST: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
+
+            pMintLimit[msg.sender] += _mNum;
+            _safeMint(msg.sender, _mNum);
+        }
+
+        if(_useApe == true) {
+            uint256 tAmount = viewApeCost(ethAmount);
+            require(IERC20(apeToken).transferFrom(msg.sender, address(this), tAmount));
+
+            pMintLimit[msg.sender] += _mNum;
+            _safeMint(msg.sender, _mNum);
+        }
     }
 
     function teamMint(uint256 _mNum) external onlyOwner {
         require(totalSupply() + _mNum <= maxSupply, "TEST: ATTEMPTED TO MINT PAST MAX SUPPLY");
-        require(tMints + _mNum <= 20, "TEST: THE TEAM MAY ONLY MINT 20");
+        require(tMints + _mNum <= 112, "TEST: THE TEAM MAY ONLY MINT 112");
 
         tMints += _mNum;
         _safeMint(msg.sender, _mNum);
-    }
-
-    function walletOfOwner(address _owner) public view returns (uint256[] memory) {
-        uint256 ownerTokenCount = balanceOf(_owner);
-        uint256[] memory ownedTokenIds = new uint256[](ownerTokenCount);
-        uint256 currentTokenId = 1;
-        uint256 ownedTokenIndex = 0;
-
-        while (ownedTokenIndex < ownerTokenCount && currentTokenId <= maxSupply) {
-        address currentTokenOwner = ownerOf(currentTokenId);
-
-            if (currentTokenOwner == _owner) {
-                ownedTokenIds[ownedTokenIndex] = currentTokenId;
-
-                ownedTokenIndex++;
-            }
-
-            currentTokenId++;
-        }
-
-        return ownedTokenIds;
     }
 
     function setName(uint256 _cID, string memory _cName) external {
@@ -233,6 +236,81 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
 
     function setBaseURI(string memory baseURI_) external onlyOwner {
         _baseURIextended = baseURI_;
+    }
+
+    function calcEthAmount(uint256 _identifier, uint256 _mNum) public view returns(uint256) {
+        if(_identifier == 0) {
+            return(bMintPrice * _mNum);
+        }
+
+        if(_identifier == 1) {
+            if(_mNum < 3) {
+                return(mintPrice * _mNum);
+            }
+
+            if(_mNum == 3) {
+                return((mintPrice * 2) + bMintPrice);
+            }
+        }
+
+        if(_identifier == 2) {
+            return(mintPrice * _mNum);
+        }
+
+        return 0;
+    }
+
+    function getEthPrice() public view returns(int) {
+        (
+            uint80 roundID, 
+            int price,
+            uint startedAt,
+            uint timeStamp,
+            uint80 answeredInRound
+        ) = ethPrice.latestRoundData();
+        return price;
+    }
+
+    function getApePrice() public view returns(uint) {
+
+        IUniswapV2Pair v2Pair = IUniswapV2Pair(pair);
+
+        (uint Res0, uint Res1,) = v2Pair.getReserves();
+
+        uint eP = uint(getEthPrice());
+
+        uint tokenPrice = (Res1 * eP) / Res0;
+
+        return tokenPrice;
+    }
+
+    function viewApeCost(uint256 ethAmount) public view returns(uint256) {
+        uint256 ePrice = uint(getEthPrice());
+        uint256 aPrice = getApePrice();
+        uint256 aCost = (ePrice * ethAmount) / aPrice;
+
+        return aCost;
+    }
+
+    function walletOfOwner(address _owner) public view returns (uint256[] memory) {
+        uint256 ownerTokenCount = balanceOf(_owner);
+        uint256[] memory ownedTokenIds = new uint256[](ownerTokenCount);
+        uint256 currentTokenId = 1;
+        uint256 ownedTokenIndex = 0;
+
+        while (ownedTokenIndex < ownerTokenCount && currentTokenId <= maxSupply) {
+        address currentTokenOwner = ownerOf(currentTokenId);
+
+            if (currentTokenOwner == _owner) {
+                ownedTokenIds[ownedTokenIndex] = currentTokenId;
+
+                ownedTokenIndex++;
+            }
+
+            currentTokenId++;
+        }
+
+        return ownedTokenIds;
     }
 
     function transferFrom(address from, address to, uint256 tokenId) public override(ERC721A) {
