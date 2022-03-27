@@ -26,7 +26,7 @@ contract MEAT is ERC20, Ownable {
     event rewardClaimed(address _claimer, uint256 _dueBal);
     event rewardsUpdated(address _sender, address _receiver, uint256 _sendBal, uint256 _receieveBal);
 
-    constructor(address _carnivorez) ERC20("TEST", "TEST") {
+    constructor(address _carnivorez) ERC20("Meat", "MEAT") {
         cMint = _carnivorez;
 
     }
