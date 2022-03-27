@@ -15,7 +15,7 @@ interface iMeat {
     function burnMeat(address _account, uint256 _number) external;
 }
 
-contract TEST is ERC721A, Ownable, PaymentSplitter {
+contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
     using Strings for uint256;
     using Address for address;
 
@@ -27,7 +27,6 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
     mapping(address => uint256) public primeMeatlist;
     mapping(address => uint256) public choiceMeatlist;
     mapping(address => uint256) public pMintLimit;
-    mapping(address => bool) public approvedAddress;
     mapping(uint256 => Data) public cData;
 
     uint256 public mintPrice = .15 ether;
@@ -37,7 +36,7 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
 
     uint256 public _namePrice = 100 ether;
     uint256 public _descPrice = 100 ether;
-    uint256[] public _cardPrice;
+    uint256[] public _cardPrice = [100 ether, 200 ether, 300 ether, 400 ether, 500 ether];
 
     bool public wlSaleState = false;
     bool public rSaleState = false;
@@ -55,8 +54,8 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
     }
     
     address payable thisContract;
-    address pair = 0x4Ab6e651ECf894766E3ffBA610346F0e54543Cc5;
-    address apeToken = 0x127554D4A22eb61127a859447bF7728fF72879Ae;
+    address pair = 0x4813f0e1b8faaB4FA7e19b38002953AC82DaeEdD;
+    address apeToken = 0x087e9105eb7E04Bda19F1463447BE4B4E8E9e824;
     
     address[] private _split = [
         0x82C3ACBb6cF6b04f52aDad9Bd4f3D26BC5Db5b36
@@ -66,7 +65,7 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         100
     ];
     
-    constructor() ERC721A("TESTNFT", "TEST") PaymentSplitter(_split, _percent) {
+    constructor() ERC721A("CarnivoreZ", "CZ") PaymentSplitter(_split, _percent) {
         ethPrice = AggregatorV3Interface(0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE);
     }
     
@@ -74,58 +73,63 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
 
     }
 
+    //Returns set contract address
     function viewThisContract() external view returns(address) {
         return thisContract;
     }
 
+    //Sets $MEAT contract address
     function setMeat(address _meat) external onlyOwner {
         meat = iMeat(_meat);
     }
 
-    function setApprovedAddress(address _approved) external onlyOwner {
-        approvedAddress[_approved] = !approvedAddress[_approved];
-    }
-
+    //Sets sale price in WEI
     function setSalePrice(uint256 _mintPrice, uint256 _billMintPrice) external onlyOwner {
         mintPrice = _mintPrice;
         bMintPrice = _billMintPrice;
     }
 
+    //Sets card prices in WEI
     function setCardPrice(uint256[] memory _cardPrices) external onlyOwner {
         for(uint256 i = 0; i < _cardPrices.length; i++) {
             _cardPrice[i] = _cardPrices[i];
         }
     }
 
+    //Populates prime meatlist
     function populatePrimeList(address[] memory _toBeWhitelisted, uint256 _numberOfMints) external onlyOwner {
         for(uint256 i = 0; i < _toBeWhitelisted.length; i++) {
             primeMeatlist[_toBeWhitelisted[i]] += _numberOfMints;
         }
     }
 
+    //Populates choice meatlist
     function populateChoiceList(address[] memory _toBeWhitelisted, uint256 _numberOfMints) external onlyOwner {
         for(uint256 i = 0; i < _toBeWhitelisted.length; i++) {
             choiceMeatlist[_toBeWhitelisted[i]] += _numberOfMints;
         }
     }
 
+    //Flips public sale state
     function setPubSaleState() external onlyOwner {
         rSaleState = !rSaleState;
     }
 
+    //Flips meatlist sale state
     function setWlSaleState() external onlyOwner {
         wlSaleState = !wlSaleState;
     }
 
+    //Mint function for primelist address's. Accepts $APE OR ETH
     function primeListMint(uint256 _mNum, bool _useApe) external payable {
-        require(wlSaleState == true, "TEST: MEATLIST MINT IS INACTIVE");
-        require(primeMeatlist[msg.sender] - _mNum >= 0,"TEST: ATTEMPTING TO MINT PAST ALLOTED AMOUNT");
-        require(totalSupply() + _mNum <= maxSupply, "TEST: ATTEMPTED TO MINT PAST MAX SUPPLY");
+        require(wlSaleState == true, "CZ: MEATLIST MINT IS INACTIVE");
+        require(primeMeatlist[msg.sender] - _mNum >= 0,"CZ: ATTEMPTING TO MINT PAST ALLOTED AMOUNT");
+        require(totalSupply() + _mNum <= maxSupply, "CZ: ATTEMPTED TO MINT PAST MAX SUPPLY");
         uint256 ethAmount = calcEthAmount(0, _mNum);
 
         if(_useApe == false) {
-            require(msg.value == ethAmount, "TEST: INSUFFCIENT OR TO MUCH ETHER SENT");
-            require(thisContract.send(msg.value), "TEST: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
+            require(msg.value == ethAmount, "CZ: INSUFFCIENT OR TO MUCH ETHER SENT");
+            require(thisContract.send(msg.value), "CZ: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
 
             primeMeatlist[msg.sender] -= _mNum;
             _safeMint(msg.sender, _mNum);
@@ -140,15 +144,16 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         }
     }
 
+    //Mint function for choicelist address's. Accepts $APE OR ETH
     function choiceListMint(uint256 _mNum, bool _useApe) external payable {
-        require(wlSaleState == true, "TEST: MEATLIST MINT IS INACTIVE");
-        require(choiceMeatlist[msg.sender] - _mNum >= 0,"TEST: ATTEMPTING TO MINT PAST ALLOTED AMOUNT");
-        require(totalSupply() + _mNum <= maxSupply, "TEST: ATTEMPTED TO MINT PAST MAX SUPPLY");
+        require(wlSaleState == true, "CZ: MEATLIST MINT IS INACTIVE");
+        require(choiceMeatlist[msg.sender] - _mNum >= 0,"CZ: ATTEMPTING TO MINT PAST ALLOTED AMOUNT");
+        require(totalSupply() + _mNum <= maxSupply, "CZ: ATTEMPTED TO MINT PAST MAX SUPPLY");
         uint256 ethAmount = calcEthAmount(1, _mNum);
 
         if(_useApe == false) {
-            require(msg.value == ethAmount, "TEST: INSUFFCIENT OR TO MUCH ETHER SENT");
-            require(thisContract.send(msg.value), "TEST: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
+            require(msg.value == ethAmount, "CZ: INSUFFCIENT OR TO MUCH ETHER SENT");
+            require(thisContract.send(msg.value), "CZ: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
 
             choiceMeatlist[msg.sender] -= _mNum;
             _safeMint(msg.sender, _mNum);
@@ -163,15 +168,16 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         }
     }
 
+    //Mint function for public mint. Accepts $APE OR ETH
     function publicMint(uint256 _mNum, bool _useApe) external payable {
-        require(rSaleState == true, "TEST: PUBLIC MINT IS INACTIVE");
-        require(pMintLimit[msg.sender] + _mNum <= 2, "TEST: ATTEMPTING TO MINT TOO MANY");
-        require(totalSupply() + _mNum <= maxSupply, "TEST: ATTEMPTED TO MINT PAST MAX SUPPLY");
+        require(rSaleState == true, "CZ: PUBLIC MINT IS INACTIVE");
+        require(pMintLimit[msg.sender] + _mNum <= 2, "CZ: ATTEMPTING TO MINT TOO MANY");
+        require(totalSupply() + _mNum <= maxSupply, "CZ: ATTEMPTED TO MINT PAST MAX SUPPLY");
         uint256 ethAmount = calcEthAmount(2, _mNum);
 
         if(_useApe == false) {
-            require(msg.value == ethAmount, "TEST: INSUFFCIENT OR TO MUCH ETHER SENT");
-            require(thisContract.send(msg.value), "TEST: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
+            require(msg.value == ethAmount, "CZ: INSUFFCIENT OR TO MUCH ETHER SENT");
+            require(thisContract.send(msg.value), "CZ: ETHER MUST BE SENT TO THE CONTRACT VIA MINT FUNCTION");
 
             pMintLimit[msg.sender] += _mNum;
             _safeMint(msg.sender, _mNum);
@@ -186,43 +192,48 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         }
     }
 
+    //Mint function for the team. Limit 112 mints
     function teamMint(uint256 _mNum) external onlyOwner {
-        require(totalSupply() + _mNum <= maxSupply, "TEST: ATTEMPTED TO MINT PAST MAX SUPPLY");
-        require(tMints + _mNum <= 112, "TEST: THE TEAM MAY ONLY MINT 112");
+        require(totalSupply() + _mNum <= maxSupply, "CZ: ATTEMPTED TO MINT PAST MAX SUPPLY");
+        require(tMints + _mNum <= 112, "CZ: THE TEAM MAY ONLY MINT 112");
 
         tMints += _mNum;
         _safeMint(msg.sender, _mNum);
     }
 
+    //Sets data struct name of NFT ID X
     function setName(uint256 _cID, string memory _cName) external {
-        require(ownerOf(_cID) == msg.sender, "TEST: YOU DO NOT OWN THIS NFT");
+        require(ownerOf(_cID) == msg.sender, "CZ: YOU DO NOT OWN THIS NFT");
         bytes memory c = bytes(_cName);
-        require(c.length > 0 && c.length < 20, "TEST: NAME MUST BE 1 TO 20 CHARACTERS");
+        require(c.length > 0 && c.length < 20, "CZ: NAME MUST BE 1 TO 20 CHARACTERS");
 
         meat.burnMeat(msg.sender, _namePrice);
         cData[_cID].name = _cName;
         emit nChange(_cID, _cName);
     }
 
+    //Sets data struct description of NFT ID X
     function setDesc(uint256 _cID, string memory _cDesc) external {
-        require(ownerOf(_cID) == msg.sender, "TEST: YOU DO NOT OWN THIS NFT");
+        require(ownerOf(_cID) == msg.sender, "CZ: YOU DO NOT OWN THIS NFT");
         bytes memory c = bytes(_cDesc);
-        require(c.length > 0 && c.length < 256, "TEST: DESCRIPTION MUST BE 1 TO 256 CHARACTERS");
+        require(c.length > 0 && c.length < 256, "CZ: DESCRIPTION MUST BE 1 TO 256 CHARACTERS");
 
         meat.burnMeat(msg.sender, _descPrice);
         cData[_cID].description = _cDesc;
         emit dChange(_cID, _cDesc);
     }
 
+    //Sets data struct card for NFT ID X
     function setCard(uint256 _cID, uint256 _cardID) external {
-        require(ownerOf(_cID) == msg.sender, "TEST: YOU DO NOT OWN THIS NFT");
-        require(_cardPrice[_cardID] != 0, "TEST: INVALID CARD SELECTED");
+        require(ownerOf(_cID) == msg.sender, "CZ: YOU DO NOT OWN THIS NFT");
+        require(_cardPrice[_cardID] != 0, "CZ: INVALID CARD SELECTED");
 
         meat.burnMeat(msg.sender, _cardPrice[_cardID]);
         cData[_cID].card = _cardID;
         emit cChange(_cID, _cardID);
     }
 
+    //Withdraws ETH balance of the contract according to split defined above
     function withdrawAll() external onlyOwner {
         for (uint256 i = 0; i < _split.length; i++) {
             address payable wallet = payable(_split[i]);
@@ -230,14 +241,17 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         }
     }
     
+    //Sets this contract address
     function setThisContract(address payable _contract) external onlyOwner {
         thisContract = _contract;
     }
 
+    //Sets baseURI for NFT metadata
     function setBaseURI(string memory baseURI_) external onlyOwner {
         _baseURIextended = baseURI_;
     }
 
+    //Caculates the required value to be sent on mint functions
     function calcEthAmount(uint256 _identifier, uint256 _mNum) public view returns(uint256) {
         if(_identifier == 0) {
             return(bMintPrice * _mNum);
@@ -260,6 +274,7 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         return 0;
     }
 
+    //Returns the current price of ETH
     function getEthPrice() public view returns(int) {
         (
             uint80 roundID, 
@@ -271,6 +286,7 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         return price;
     }
 
+    //Returns the current price of $APE
     function getApePrice() public view returns(uint) {
 
         IUniswapV2Pair v2Pair = IUniswapV2Pair(pair);
@@ -284,6 +300,7 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         return tokenPrice;
     }
 
+    //Returns a converted value of $APE to ETH to equal ETH mint pricing
     function viewApeCost(uint256 ethAmount) public view returns(uint256) {
         uint256 ePrice = uint(getEthPrice());
         uint256 aPrice = getApePrice();
@@ -292,6 +309,7 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         return aCost;
     }
 
+    //Returns NFT's owned by wallet address
     function walletOfOwner(address _owner) public view returns (uint256[] memory) {
         uint256 ownerTokenCount = balanceOf(_owner);
         uint256[] memory ownedTokenIds = new uint256[](ownerTokenCount);
@@ -313,17 +331,21 @@ contract TEST is ERC721A, Ownable, PaymentSplitter {
         return ownedTokenIds;
     }
 
+    //Override to update $MEAT rewards on NFT transfer
     function transferFrom(address from, address to, uint256 tokenId) public override(ERC721A) {
         meat.updateRewards(from, to);
         ERC721A.transferFrom(from, to, tokenId);
     }
     
+    //Override to update $MEAT rewards on NFT transfer
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public override(ERC721A) {
         meat.updateRewards(from, to);
         ERC721A.safeTransferFrom(from, to, tokenId, _data);
     }
 
+    //Returns the current baseURI
     function _baseURI() internal view virtual override returns (string memory) {
         return _baseURIextended;
     }
 }
+
