@@ -137,7 +137,9 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
 
         if(_useApe == true) {
             uint256 tAmount = viewApeCost(ethAmount);
-            require(IERC20(apeToken).transferFrom(msg.sender, address(this), tAmount));
+
+            bool success = IERC20(apeToken).transferFrom(msg.sender, address(this), tAmount);
+            require(success, "CZ: TRANSFER FAILED");
 
             primeMeatlist[msg.sender] -= _mNum;
             _safeMint(msg.sender, _mNum);
@@ -161,7 +163,9 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
 
         if(_useApe == true) {
             uint256 tAmount = viewApeCost(ethAmount);
-            require(IERC20(apeToken).transferFrom(msg.sender, address(this), tAmount));
+
+            bool success = IERC20(apeToken).transferFrom(msg.sender, address(this), tAmount);
+            require(success, "CZ: TRANSFER FAILED");
 
             choiceMeatlist[msg.sender] -= _mNum;
             _safeMint(msg.sender, _mNum);
@@ -185,7 +189,9 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
 
         if(_useApe == true) {
             uint256 tAmount = viewApeCost(ethAmount);
-            require(IERC20(apeToken).transferFrom(msg.sender, address(this), tAmount));
+
+            bool success = IERC20(apeToken).transferFrom(msg.sender, address(this), tAmount);
+            require(success, "CZ: TRANSFER FAILED");
 
             pMintLimit[msg.sender] += _mNum;
             _safeMint(msg.sender, _mNum);
@@ -348,4 +354,3 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
         return _baseURIextended;
     }
 }
-
