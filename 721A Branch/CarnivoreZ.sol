@@ -52,6 +52,8 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
     event publicSaleStateChanged(bool _saleState);
     event meatlistSaleStateChanged(bool _saleState);
     event baseURIChanged(string _baseURI);
+    event namePriceChanged(uint256 _newPrice);
+    event descriptionPriceChanged(uint256 _newPrice);
 
     struct Data {
         string name;
@@ -63,13 +65,13 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
     address constant apeToken = 0x4d224452801ACEd8B2F0aebE155379bb5D594381;
     
     address[] private _split = [
-        0xCc43B7eE17Db1d698Dc0e5D0B7b54A18840D98aa, //Project Development
-        0x5B38Da6a701c568545dCfcB03FcB875f56beddC4, //Krypt
-        0x6526c12DE85aeB53B23cFF4eaF55284199C3a703, //Space
-        0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2, //MJ
-        0x34f963c796E94aCeEc20326dCAd77D1573914964, //Reiumbursement
-        0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB, //Carlos
-        0x55a8556fcFBF953930218e70d9c97f9005d3eCB5  //Phntm
+        0xCc43B7eE17Db1d698Dc0e5D0B7b54A18840D98aa, 
+        0xF9Ba46D5D7a24Be56bA69c95c1011AE5B0d3c4a1,
+        0x6526c12DE85aeB53B23cFF4eaF55284199C3a703, 
+        0x392e239cA5522EA5bD3d39cAC56402FCDeC51Ec7, 
+        0x34f963c796E94aCeEc20326dCAd77D1573914964,
+        0x14672151CFE13665e855427B17A00f18Cc532769,
+        0x55a8556fcFBF953930218e70d9c97f9005d3eCB5
     ];
     
     uint256[] private _percent = [
@@ -117,11 +119,15 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
     //Sets name price in WEI
     function setNamePrice(uint256 _price) external onlyOwner {
         _namePrice = _price;
+
+        emit namePriceChanged(_price);
     }
 
     //Sets description price in WEI
     function setDescriptionPrice(uint256 _price) external onlyOwner {
         _descriptionPrice = _price;
+
+        emit descriptionPriceChanged(_price);
     }
 
     //Populates prime meatlist
