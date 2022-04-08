@@ -84,7 +84,7 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
     ];
     
     constructor() ERC721A("CarnivoreZ", "CZ") PaymentSplitter(_split, _percent) {
-        ethPrice = AggregatorV3Interface(0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE);
+        ethPrice = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
     }
     
     fallback() external payable {
@@ -94,7 +94,7 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
     //Sets $MEAT contract address
     function setMeat(address _meat) external onlyOwner {
         meat = iMeat(_meat);
-        
+
         emit meatSet(_meat);
     }
 
