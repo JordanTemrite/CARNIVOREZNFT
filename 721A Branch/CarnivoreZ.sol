@@ -52,7 +52,6 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
     event publicSaleStateChanged(bool _saleState);
     event meatlistSaleStateChanged(bool _saleState);
     event baseURIChanged(string _baseURI);
-    
 
     struct Data {
         string name;
