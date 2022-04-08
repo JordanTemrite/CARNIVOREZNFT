@@ -12,70 +12,82 @@ contract MEAT is ERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
 
-    mapping(address => uint256) private pMeat;
-    mapping(address => uint256) private lClaim;
-    mapping(address => bool) private tAddr;
+    mapping(address => uint256) private pendingMeat;
+    mapping(address => uint256) private lastClaim;
+    mapping(address => bool) private trustedAddress;
 
-    bool public rEnabled;
+    bool public rewardsEnabled;
 
-    uint256 public rStart;
-    uint256 public rRate = 5 ether;
+    uint256 public rewardStart;
+    uint256 public constant rewardRate = 5 ether;
 
-    address public cMint;
+    address public carnivorezMintContract;
 
     event rewardClaimed(address _claimer, uint256 _dueBal);
     event rewardsUpdated(address _sender, address _receiver, uint256 _sendBal, uint256 _receieveBal);
+    event rewardsInitialized(uint256 _rewardStart);
+    event minterSet(address _minter);
+    event rewardStateChanged(bool _rewardState);
+    event trustedAddressChanged(address _trusted, bool _trustState);
 
     constructor(address _carnivorez) ERC20("Meat", "MEAT") {
-        cMint = _carnivorez;
+        carnivorezMintContract = _carnivorez;
 
     }
 
     function initializeRewards() external onlyOwner {
-        require(rStart == 0, "MEAT: REWARDS ALREADY INITIALIZED");
-        rStart = block.timestamp;
+        require(rewardStart == 0, "MEAT: REWARDS ALREADY INITIALIZED");
+        rewardStart = block.timestamp;
+
+        emit rewardsInitialized(rewardStart);
     }
 
     function setMinter(address _carnivorez) external onlyOwner {
-        cMint = _carnivorez;
+        carnivorezMintContract = _carnivorez;
+
+        emit minterSet(_carnivorez);
     }
 
-    function rewardState() external onlyOwner {
-        rEnabled = !rEnabled;
+    function setRewardState() external onlyOwner {
+        rewardsEnabled = !rewardsEnabled;
+
+        emit rewardStateChanged(rewardsEnabled);
     }
 
     function setTrusted(address _tTrust, bool _tState) external onlyOwner {
-        tAddr[_tTrust] = _tState;
+        trustedAddress[_tTrust] = _tState;
+
+        emit trustedAddressChanged(_tTrust, _tState);
     }
 
     function updateRewards(address _cSend, address _cReceive) external {
-        require(msg.sender == cMint, "MEAT: MAY ONLY BE CALLED BY PARENT CONTRACT");
+        require(msg.sender == carnivorezMintContract, "MEAT: MAY ONLY BE CALLED BY PARENT CONTRACT");
 
         uint256 _tSend = pendingEligible(_cSend);
         uint256 _tReceive = pendingEligible(_cReceive);
 
-        lClaim[_cSend] = block.timestamp;
-        lClaim[_cReceive] = block.timestamp;
+        lastClaim[_cSend] = block.timestamp;
+        lastClaim[_cReceive] = block.timestamp;
 
-        pMeat[_cSend] = pMeat[_cSend] + _tSend;
-        pMeat[_cReceive] =  pMeat[_cReceive] + _tReceive;
+        pendingMeat[_cSend] = pendingMeat[_cSend] + _tSend;
+        pendingMeat[_cReceive] =  pendingMeat[_cReceive] + _tReceive;
 
         emit rewardsUpdated(_cSend, _cReceive, _tSend, _tReceive);
     }
 
     function claimMeat() external {
-        require(rEnabled == true, "MEAT: REWARDS ARE PAUSED");
+        require(rewardsEnabled == true, "MEAT: REWARDS ARE PAUSED");
 
         uint256 _dueBal = claimDue(msg.sender); 
-        pMeat[msg.sender] = 0;
-        lClaim[msg.sender] = block.timestamp;
+        pendingMeat[msg.sender] = 0;
+        lastClaim[msg.sender] = block.timestamp;
 
         _mint(msg.sender, _dueBal);
         emit rewardClaimed(msg.sender, _dueBal);
     }
 
     function burnMeat(address _burner, uint256 _amount) external {
-        require(msg.sender == address(cMint) || tAddr[msg.sender] == true, "MEAT: NOT AUTHORIZED TO BURN");
+        require(msg.sender == address(carnivorezMintContract) || trustedAddress[msg.sender] == true, "MEAT: NOT AUTHORIZED TO BURN");
 
         _burn(_burner, _amount);
     }
@@ -83,25 +95,25 @@ contract MEAT is ERC20, Ownable {
     function pendingEligible(address _cOwner) public view returns(uint256) {
         uint256 rPeriod;
 
-        if(rStart == 0) {
+        if(rewardStart == 0) {
             return 0;
         } else
-        if(lClaim[_cOwner] > rStart) {
-            rPeriod = lClaim[_cOwner];
+        if(lastClaim[_cOwner] > rewardStart) {
+            rPeriod = lastClaim[_cOwner];
         } else
-        if(lClaim[_cOwner] < rStart) {
-            rPeriod = rStart;
+        if(lastClaim[_cOwner] < rewardStart) {
+            rPeriod = rewardStart;
         }
 
-        return numberHeld(_cOwner).mul(rRate).mul((block.timestamp - rPeriod)).div(60);
+        return numberHeld(_cOwner).mul(rewardRate).mul((block.timestamp - rPeriod)).div(60);
     }
 
     function numberHeld(address _cOwner) public view returns(uint256) {
-        return IERC721(cMint).balanceOf(_cOwner);
+        return IERC721(carnivorezMintContract).balanceOf(_cOwner);
     }
 
     function claimDue(address _cOwner) public view returns(uint256) {
-        return pMeat[_cOwner].add(pendingEligible(_cOwner));
+        return pendingMeat[_cOwner].add(pendingEligible(_cOwner));
     }
 
 }
