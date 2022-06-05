@@ -7,7 +7,6 @@ import "./Ownable.sol";
 import "./Address.sol";
 import "./PaymentSplitter.sol";
 import "./Strings.sol";
-import "./IUniswapV2Pair.sol";
 import "./AggregatorV3Interface.sol";
 
 interface iMeat {
@@ -21,6 +20,7 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
 
     iMeat public meat;
     AggregatorV3Interface internal ethPrice;
+    AggregatorV3Interface internal apePrice;
 
     mapping(address => uint256) public primeMeatlist;
     mapping(address => uint256) public choiceMeatlist;
@@ -61,7 +61,6 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
         uint256 card;
     }
     
-    address constant pair = 0xb011EEaab8bF0c6DE75510128dA95498E4b7e67F;
     address constant apeToken = 0x4d224452801ACEd8B2F0aebE155379bb5D594381;
     
     address[] private _split = [
@@ -86,6 +85,7 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
     
     constructor() ERC721A("CarnivoreZ", "CZ") PaymentSplitter(_split, _percent) {
         ethPrice = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
+        apePrice = AggregatorV3Interface(0xD10aBbC76679a20055E167BB80A24ac851b37056);
     }
     
     fallback() external payable {
@@ -179,7 +179,7 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
 
         if(_useApe == true) {
             require(msg.sender == tx.origin, "CZ: MUST NOT BE CALLED BY A SMART CONTRACT");
-            (uint apePrice, uint256 apeCost) = getApePrice(ethAmount);
+            uint256 apeCost = getApeCost(ethAmount);
 
             bool success = IERC20(apeToken).transferFrom(msg.sender, address(this), apeCost);
             require(success, "CZ: TRANSFER FAILED");
@@ -206,7 +206,7 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
 
         if(_useApe == true) {
             require(msg.sender == tx.origin, "CZ: MUST NOT BE CALLED BY A SMART CONTRACT");
-            (uint apePrice, uint256 apeCost) = getApePrice(ethAmount);
+            uint256 apeCost = getApeCost(ethAmount);
 
             bool success = IERC20(apeToken).transferFrom(msg.sender, address(this), apeCost);
             require(success, "CZ: TRANSFER FAILED");
@@ -233,7 +233,7 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
 
         if(_useApe == true) {
             require(msg.sender == tx.origin, "CZ: MUST NOT BE CALLED BY A SMART CONTRACT");
-            (uint apePrice, uint256 apeCost) = getApePrice(ethAmount);
+            uint256 apeCost = getApeCost(ethAmount);
 
             bool success = IERC20(apeToken).transferFrom(msg.sender, address(this), apeCost);
             require(success, "CZ: TRANSFER FAILED");
@@ -361,20 +361,28 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
         return price;
     }
 
+    //Returns the current price of APE
+    function getApePrice() public view returns(int) {
+        (
+            uint80 roundID, 
+            int price,
+            uint startedAt,
+            uint timeStamp,
+            uint80 answeredInRound
+        ) = apePrice.latestRoundData();
+        return price;
+    }
+
     //Returns the current price of $APE
-    function getApePrice(uint256 ethAmount) public view returns(uint, uint256) {
-
-        IUniswapV2Pair v2Pair = IUniswapV2Pair(pair);
-
-        (uint Res0, uint Res1,) = v2Pair.getReserves();
+    function getApeCost(uint256 ethAmount) public view returns(uint) {
 
         uint eP = uint(getEthPrice());
 
-        uint tokenPrice = (Res1 * eP) / Res0;
+        uint tokenPrice = uint(getApePrice());
 
         uint aCost = (eP * ethAmount) / tokenPrice;
 
-        return (tokenPrice, aCost);
+        return aCost;
     }
 
     //Override to update $MEAT rewards on NFT transfer
