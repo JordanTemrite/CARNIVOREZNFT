@@ -14,7 +14,7 @@ interface iMeat {
     function burnMeat(address _account, uint256 _number) external;
 }
 
-contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
+contract TEST is ERC721A, Ownable, PaymentSplitter {
     using Strings for uint256;
     using Address for address;
 
@@ -83,7 +83,7 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
         1
     ];
     
-    constructor() ERC721A("CarnivoreZ", "CZ") PaymentSplitter(_split, _percent) {
+    constructor() ERC721A("TEST", "TEST") PaymentSplitter(_split, _percent) {
         ethPrice = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
         apePrice = AggregatorV3Interface(0xD10aBbC76679a20055E167BB80A24ac851b37056);
     }
