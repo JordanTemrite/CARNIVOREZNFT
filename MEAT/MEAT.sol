@@ -105,7 +105,7 @@ contract MEAT is ERC20, Ownable {
             rPeriod = rewardStart;
         }
 
-        return numberHeld(_cOwner).mul(rewardRate).mul((block.timestamp - rPeriod)).div(60);
+        return numberHeld(_cOwner).mul(rewardRate).mul((block.timestamp - rPeriod)).div(86400);
     }
 
     function numberHeld(address _cOwner) public view returns(uint256) {
