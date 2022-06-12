@@ -32,7 +32,7 @@ contract MEAT is ERC20, Ownable {
 
     constructor(address _carnivorez) ERC20("Meat", "MEAT") {
         carnivorezMintContract = _carnivorez;
-
+        _mint(msg.sender, 50000 * (10**18));
     }
 
     function initializeRewards() external onlyOwner {
