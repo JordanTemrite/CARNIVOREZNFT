@@ -32,9 +32,9 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
     uint256 public constant maxSupply = 10012;
     uint256 public teamMints;
 
-    uint256 public _namePrice = 100 ether;
+    uint256 public _namePrice = 50 ether;
     uint256 public _descriptionPrice = 100 ether;
-    uint256[] public _cardPrice = [100 ether, 200 ether, 300 ether, 400 ether, 500 ether];
+    uint256[] public _cardPrice = [50 ether, 100 ether, 150 ether, 200 ether, 250 ether];
 
     bool public meatlistSaleState = false;
     bool public publicSaleState = false;
@@ -65,21 +65,23 @@ contract CarnivoreZ is ERC721A, Ownable, PaymentSplitter {
     
     address[] private _split = [
         0xCc43B7eE17Db1d698Dc0e5D0B7b54A18840D98aa, 
-        0xF9Ba46D5D7a24Be56bA69c95c1011AE5B0d3c4a1,
+        0xF9Ba46D5D7a24Be56bA69c95c1011AE5B0d3c4a1, 
         0x6526c12DE85aeB53B23cFF4eaF55284199C3a703, 
+        0x6856166A7A273b4a1C04D369c3123aE7Da7C36ed, 
         0x392e239cA5522EA5bD3d39cAC56402FCDeC51Ec7, 
-        0x34f963c796E94aCeEc20326dCAd77D1573914964,
-        0x14672151CFE13665e855427B17A00f18Cc532769,
-        0x55a8556fcFBF953930218e70d9c97f9005d3eCB5
+        0x14672151CFE13665e855427B17A00f18Cc532769, 
+        0x34f963c796E94aCeEc20326dCAd77D1573914964, 
+        0x55a8556fcFBF953930218e70d9c97f9005d3eCB5 
     ];
     
     uint256[] private _percent = [
-        50,
+        45,
         16,
-        15,
-        8,
-        5,
-        5,
+        14,
+        10,
+        7,
+        6,
+        1,
         1
     ];
     
