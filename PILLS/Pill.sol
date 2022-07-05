@@ -13,11 +13,13 @@ contract Pill is ERC721A, Ownable, PaymentSplitter {
 
     IERC721 cz = IERC721(0x79182905C2F78787F2e194378979E9379e6A9EE7);
 
-    uint256 constant max_supply = 5000;
-    uint256 public min_purchase_price = .03 ether;
+    uint256 constant max_supply = 4000;
+    uint256 public min_purchase_price = .04 ether;
 
     bool internal burn_enabled = false;
     bool public mint_state = false;
+    
+    string private _baseURIextended;
 
     mapping(address => bool) public trusted;
     mapping(address => bool) public no_charge;
@@ -46,6 +48,7 @@ contract Pill is ERC721A, Ownable, PaymentSplitter {
     event mint_swap(bool _state);
     event add_trusted(address _trusted, bool _state);
     event add_no_charge(address _no_charge, bool _state);
+    event baseURIChanged(string _baseURI);
 
 
     constructor() ERC721A("Pill-1", "P1") PaymentSplitter(_split, _percent) {
@@ -121,5 +124,19 @@ contract Pill is ERC721A, Ownable, PaymentSplitter {
             address payable wallet = payable(_split[i]);
             release(wallet);
         }
+    }
+
+    //Sets baseURI for NFT metadata
+    function setBaseURI(string memory baseURI_) external onlyOwner {
+        bytes memory uri = bytes(baseURI_);
+        require(uri.length > 0, "CZ: MUST NOT BE AN EMPTY STRING");
+        _baseURIextended = baseURI_;
+
+        emit baseURIChanged(baseURI_);
+    }
+
+    //Returns the current baseURI
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _baseURIextended;
     }
 }
